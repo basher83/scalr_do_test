@@ -77,7 +77,7 @@ variable "droplet_size" {
 }
 
 variable "staging_public_key" {
-  description = "Public SSH key for Ansible user, provided via Spacelift variable."
+  description = "Public SSH key for Ansible user, provided via Scalr variable. Can also just be added via the UI."
   type        = string
   sensitive   = true
 }
