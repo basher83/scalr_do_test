@@ -1,10 +1,22 @@
 terraform {
-  required_providers {
-    digitalocean = {
-      source  = "digitalocean/digitalocean"
-      version = "~> 2.0"
+    required_providers {
+        scalr = {
+            source  = "registry.scalr.io/scalr/scalr"
+            version = "~> 2.0"
+        }
+        digitalocean = {
+            source  = "digitalocean/digitalocean"
+            version = "~> 2.0"
+        }
     }
+
   }
+
+
+
+provider "scalr" {
+  hostname = var.scalr_hostname
+  token    = var.scalr_token
 }
 
 provider "digitalocean" {
@@ -36,7 +48,7 @@ variable "do_token" {
 variable "ssh_fingerprint" {
   description = "Fingerprint of your SSH key in DigitalOcean"
   type        = string
-  default     = ""
+  default     = "eb:54:57:c9:f7:9c:be:2b:4b:e1:69:41:89:d1:ea:b1"
   sensitive   = true
 }
 
