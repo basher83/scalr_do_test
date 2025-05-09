@@ -1,9 +1,9 @@
 terraform {
     required_providers {
-        scalr = {
-            source  = "registry.scalr.io/scalr/scalr"
-            version = "~> 2.0"
-        }
+        #scalr = {
+        #    source  = "registry.scalr.io/scalr/scalr"
+        #    version = "~> 2.0"
+        #}
         digitalocean = {
             source  = "digitalocean/digitalocean"
             version = "~> 2.0"
@@ -14,10 +14,10 @@ terraform {
 
 
 
-provider "scalr" {
-  hostname = var.scalr_hostname
-  token    = var.scalr_token
-}
+#provider "scalr" {
+#  hostname = var.scalr_hostname
+#  token    = var.scalr_token
+#}
 
 provider "digitalocean" {
   token = var.do_token
@@ -36,6 +36,7 @@ resource "digitalocean_droplet" "drop_test" {
   user_data = templatefile("${path.module}/digitalocean.tftpl", {
     public_key = var.staging_public_key
   })
+  tags = ["yor-managed"]
 }
 
 variable "do_token" {
