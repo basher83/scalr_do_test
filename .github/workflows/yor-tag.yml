@@ -27,7 +27,7 @@ jobs:
           directory: ./terraform
 
       - name: Commit tag changes
-        uses: stefanzweifel/git-auto-commit-action@v4
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: auto-tagged by Yor"
           commit_user_name: Yor Bot
