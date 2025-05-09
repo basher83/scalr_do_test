@@ -14,9 +14,13 @@ packages:
   - python3
   - python3-pip
   - zsh
+  - git
 
 runcmd:
   - set -e
   - curl -fsSL https://get.docker.com -o get-docker.sh
   - sh get-docker.sh
   - rm get-docker.sh
+  # - git clone https://github.com/your-org/your-compose-repo.git /home/ansible/compose-stack
+  # - chown -R ansible:ansible /home/ansible/compose-stack
+  # - su - ansible -c "docker compose -f /home/ansible/compose-stack/docker-compose.yml up -d"
