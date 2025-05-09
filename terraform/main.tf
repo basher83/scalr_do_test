@@ -2,7 +2,7 @@ terraform {
     required_providers {
         scalr = {
             source  = "registry.scalr.io/scalr/scalr"
-            version = "~> 2.0"
+            version = "~> 3.0"
         }
         digitalocean = {
             source  = "digitalocean/digitalocean"
