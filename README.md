@@ -1,71 +1,73 @@
-# scalr_do_test
+# Scalr Multi-Provider Infrastructure
 
-Test repo for Scalr with DigitalOcean
-
-## Overview
-
-This repository contains Terraform configuration for deploying a DigitalOcean droplet and managing it through Scalr. The deployment includes a fully configured Ubuntu droplet with Docker and necessary tooling pre-installed.
-
-## Prerequisites
-
-- Terraform v1.0 or later
-- Scalr account
-- DigitalOcean account with API token
+This repository contains Terraform configurations for deploying infrastructure across multiple providers (DigitalOcean and Proxmox) using Scalr for state management and workflow automation.
 
 ## Repository Structure
 
-- `/terraform/backend.tf` - Scalr backend configuration
-- `/terraform/main.tf` - Main Terraform configuration with provider settings and droplet resource
-- `/terraform/digitalocean.tftpl` - Cloud-init template for droplet provisioning
-- `/terraform/outputs.tf` - Output definitions (droplet IP address)
-- `/terraform/terraform.tfvars.example` - Example variable definitions
-
-## Scalr Integration
-
-This project uses Scalr as a backend for Terraform state management and variable handling. The configuration includes:
-
-- Remote backend configuration in `backend.tf`
-- Provider configuration in `main.tf`
+```
+scalr_do_test/
+├── modules/                     # Reusable Terraform modules
+│   ├── digitalocean-droplet/   # DigitalOcean droplet module
+│   ├── digitalocean-firewall/  # DigitalOcean firewall module
+│   ├── proxmox-vm/            # Proxmox virtual machine module
+│   └── proxmox-container/     # Proxmox LXC container module
+├── environments/               # Environment-specific configurations
+│   ├── development/           # Development environment
+│   ├── staging/              # Staging environment
+│   └── production/           # Production environment
+├── shared/                   # Shared configurations
+│   ├── variables/           # Global variables and tags
+│   └── policies/           # OPA policies
+└── hooks/                  # Pre/post hooks
+```
 
 ## Getting Started
 
-1. Create a provider configuration on Scalr for DigitalOcean
-2. Set up the `token` variable with your DigitalOcean API token in Scalr
-3. Copy `terraform.tfvars.example` to `terraform.tfvars` and customize as needed
-4. Run Terraform through Scalr to deploy resources
+### Prerequisites
 
-## Variable Management
+- Scalr account and workspace access
+- Provider credentials configured in Scalr:
+  - DigitalOcean API token
+  - Proxmox credentials
+- SSH keys registered with providers
 
-The following variables are used in this project:
+### Deployment
 
-### Required variables
+Each environment and provider combination has its own Scalr workspace:
 
-- `token`: DigitalOcean API token (sensitive) # This is configured via Provider configuration in Scalr
-- `ssh_fingerprint`: SSH key fingerprint registered in DigitalOcean
-- `staging_public_key`: SSH public key for the Ansible user
-- `scalr_hostname`: Scalr hostname (default: "the-mothership.scalr.io")
-- `scalr_token`: Scalr API token (sensitive)
+- `dev-digitalocean` - Development DigitalOcean resources
+- `dev-proxmox-vm` - Development Proxmox VMs
+- `dev-proxmox-container` - Development Proxmox containers
+- (Similar patterns for staging and production)
 
-### Optional variables (with defaults)
+### Variable Management
 
-- `droplet_image`: Image identifier (default: "ubuntu-24-04-x64")
-- `droplet_name`: Name of the droplet (default: "drop-test-v3")
-- `droplet_region`: Region for deployment (default: "nyc1")
-- `droplet_size`: Size of the droplet (default: "s-1vcpu-1gb")
+Variables are managed at different Scalr levels:
 
-## Droplet Configuration
+1. **Account Level**: Common settings like Scalr hostname
+2. **Environment Level**: Environment-specific tags and credentials
+3. **Workspace Level**: Resource-specific configurations
 
-The deployed droplet is configured with:
+### Modules
 
-- Ubuntu 24.04
-- Docker pre-installed
-- Python 3 and pip3
-- ZSH as the default shell
-- An "ansible" user with sudo privileges for management
-- SSH key-based authentication only (password auth disabled)
+Each module is designed to be reusable across environments:
 
-## Outputs
+- **digitalocean-droplet**: Creates DigitalOcean droplets with cloud-init
+- **digitalocean-firewall**: Manages DigitalOcean firewall rules
+- **proxmox-vm**: Creates Proxmox virtual machines
+- **proxmox-container**: Creates Proxmox LXC containers
 
-After successful deployment, the following outputs are available:
+### Policies
 
-- `droplet_ip`: The public IPv4 address of the created droplet
+OPA policies enforce standards:
+
+- Required tagging on resources
+- Workspace naming conventions
+- Resource configuration validation
+
+## Contributing
+
+1. Make changes in feature branches
+2. Test in development environment first
+3. Use pull requests for review
+4. Scalr will automatically plan/apply based on workspace configuration
