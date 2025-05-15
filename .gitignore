@@ -38,3 +38,7 @@ terraform.rc
 
 # Scalr specific
 .scalr/backend.hcl
+
+# VScode specific
+.vscode/
+*.code-workspace
