@@ -28,7 +28,7 @@ variable "ssh_fingerprint" {
   sensitive   = true
 }
 
-variable "staging_public_key" {
+variable "development_public_key" {
   description = "Public SSH key for Ansible user"
   type        = string
   sensitive   = true

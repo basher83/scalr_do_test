@@ -11,7 +11,7 @@ module "droplet" {
   
   user_data_template = "${path.module}/../../../modules/digitalocean-droplet/templates/cloud-init.tftpl"
   template_vars = {
-    public_key = var.staging_public_key
+    public_key = var.development_public_key
   }
   
   tags = local.common_tags
