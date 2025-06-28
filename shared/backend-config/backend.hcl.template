@@ -1,0 +1,16 @@
+# Scalr Backend Configuration Template
+# 
+# This is a template for backend configuration to reduce duplication.
+# Use with: tofu init -backend-config=path/to/backend-config.hcl
+#
+# Environment variables can also be used:
+# - SCALR_HOSTNAME: The Scalr hostname
+# - SCALR_TOKEN: The Scalr API token
+# - TF_WORKSPACE: The workspace name
+
+hostname = "the-mothership.scalr.io"
+
+# The workspace name should be provided via:
+# 1. Command line: -backend-config="workspaces={ name = \"env-provider\" }"
+# 2. Environment variable: export TF_WORKSPACE="env-provider"
+# 3. Local backend config file with workspace name

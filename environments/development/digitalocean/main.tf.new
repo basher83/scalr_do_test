@@ -1,0 +1,50 @@
+# Load shared variables
+module "tags" {
+  source = "../../../shared/variables"
+  
+  environment   = "development"
+  provider_type = "digitalocean"
+  
+  additional_tags = {
+    "team" = "platform"
+  }
+}
+
+# DigitalOcean Droplet
+module "droplet" {
+  source = "../../../modules/digitalocean-droplet"
+
+  droplet_name      = var.droplet_name
+  droplet_region    = var.droplet_region
+  droplet_size      = var.droplet_size
+  droplet_image     = var.droplet_image
+  ssh_fingerprint   = var.ssh_fingerprint
+  enable_backups    = false  # Usually disabled in development
+  enable_monitoring = true
+  
+  user_data_template = "${path.module}/../../../modules/digitalocean-droplet/templates/cloud-init.tftpl"
+  template_vars = {
+    public_key = var.development_public_key
+  }
+  
+  tags = keys(module.tags.common_tags)  # Convert map to list of tag names
+}
+
+# Common Firewall Configuration
+module "firewall" {
+  source = "../../../modules/common-firewall"
+
+  firewall_name = "${var.droplet_name}-firewall"
+  droplet_ids   = [module.droplet.id]
+  
+  # Use default rules for development (all enabled)
+  allow_ssh   = true
+  allow_http  = true
+  allow_https = true
+  allow_icmp  = true
+  
+  # In production, you might restrict SSH:
+  # ssh_sources = ["10.0.0.0/8", "vpn.company.com/32"]
+  
+  tags = keys(module.tags.common_tags)
+}

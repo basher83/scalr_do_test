@@ -1,45 +1,87 @@
 terraform {
   required_providers {
     proxmox = {
-      source  = "Telmate/proxmox"
-      version = "~> 2.9"
+      source  = "bpg/proxmox"
+      version = "~> 0.78.0"
     }
   }
 }
 
-resource "proxmox_vm_qemu" "vm" {
+resource "proxmox_virtual_environment_vm" "vm" {
   name        = var.vm_name
-  target_node = var.target_node
+  node_name   = var.target_node
+  vm_id       = var.vm_id
+  description = var.description
+  tags        = var.tags
   
-  # Template configuration
-  clone    = var.template_name
-  os_type  = "cloud-init"
-  boot     = "c"
-  agent    = 1
+  # Clone configuration
+  dynamic "clone" {
+    for_each = var.template_name != null ? [1] : []
+    content {
+      vm_id = var.template_id
+      full  = true
+    }
+  }
   
-  # Hardware configuration
-  cores   = var.cores
-  sockets = var.sockets
-  memory  = var.memory
+  # CPU configuration
+  cpu {
+    cores   = var.cores
+    sockets = var.sockets
+    type    = var.cpu_type
+  }
+  
+  # Memory configuration
+  memory {
+    dedicated = var.memory
+    floating  = var.memory  # Enable ballooning
+  }
+  
+  # Boot configuration
+  on_boot = var.on_boot
+  started = var.started
   
   # Disk configuration
   disk {
-    slot     = 0
-    size     = var.disk_size
-    type     = "scsi"
-    storage  = var.storage
-    format   = "qcow2"
-    iothread = 1
+    datastore_id = var.storage
+    size         = var.disk_size
+    interface    = "scsi0"
+    discard      = "on"
+    iothread     = true
   }
   
   # Network configuration
-  network {
-    model  = "virtio"
+  network_device {
     bridge = var.network_bridge
+    model  = "virtio"
   }
   
-  # Cloud-init configuration
-  ipconfig0 = "ip=${var.ip_address}/${var.network_mask},gw=${var.gateway}"
+  # Cloud-init configuration when using templates
+  dynamic "initialization" {
+    for_each = var.template_name != null ? [1] : []
+    content {
+      ip_config {
+        ipv4 {
+          address = "${var.ip_address}/${var.network_mask}"
+          gateway = var.gateway
+        }
+      }
+      
+      user_account {
+        username = var.ssh_username
+        keys     = var.ssh_keys
+        password = var.ssh_password
+      }
+    }
+  }
   
-  tags = join(";", var.tags)
+  # Agent configuration
+  agent {
+    enabled = var.qemu_agent
+    type    = "virtio"
+  }
+  
+  # Operating system type
+  operating_system {
+    type = var.os_type
+  }
 }

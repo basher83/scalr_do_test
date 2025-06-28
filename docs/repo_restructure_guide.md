@@ -13,7 +13,7 @@ Looking at your current setup, you have several areas that can be improved for b
 
 Here's a scalable structure that follows Scalr best practices:
 
-```
+```plaintext
 scalr_do_test/
 ├── README.md
 ├── .gitignore
@@ -89,6 +89,7 @@ Each deployment type (DigitalOcean, Proxmox VM, Proxmox LXC) should have its own
 ### Step 1: Create Modules
 
 **DigitalOcean Module** (`modules/digitalocean-droplet/main.tf`):
+
 ```hcl
 terraform {
   required_providers {
@@ -116,6 +117,7 @@ resource "digitalocean_droplet" "droplet" {
 ```
 
 **Proxmox VM Module** (`modules/proxmox-vm/main.tf`):
+
 ```hcl
 terraform {
   required_providers {
@@ -167,6 +169,7 @@ resource "proxmox_vm_qemu" "vm" {
 ### Step 2: Configure Backends for Multiple Workspaces
 
 **Development DigitalOcean** (`environments/development/digitalocean/backend.tf`):
+
 ```hcl
 terraform {
   backend "remote" {
@@ -179,6 +182,7 @@ terraform {
 ```
 
 **Development Proxmox VM** (`environments/development/proxmox-vm/backend.tf`):
+
 ```hcl
 terraform {
   backend "remote" {
@@ -193,6 +197,7 @@ terraform {
 ### Step 3: Environment-Specific Main Files
 
 **Development DigitalOcean** (`environments/development/digitalocean/main.tf`):
+
 ```hcl
 module "droplet" {
   source = "../../../modules/digitalocean-droplet"
@@ -227,16 +232,19 @@ locals {
 Use Scalr's inheritance model. Objects created at the account scope can be assigned and inherited by environments, and objects assigned to environments will be inherited by workspaces.
 
 **Global Variables** (Set at Scalr Account Level):
+
 - `scalr_hostname`
 - Organization-wide tags
 - Common networking ranges
 
 **Environment Variables** (Set at Scalr Environment Level):
+
 - `environment_name` (development/staging/production)
 - Environment-specific tags
 - Provider credentials (scoped by environment)
 
 **Workspace Variables** (Set at Individual Workspace Level):
+
 - Resource-specific configurations
 - Instance names and sizes
 - Provider-specific settings
@@ -244,6 +252,7 @@ Use Scalr's inheritance model. Objects created at the account scope can be assig
 ### Step 5: Variable Definitions
 
 **Module Variables** (`modules/digitalocean-droplet/variables.tf`):
+
 ```hcl
 variable "droplet_name" {
   description = "Name of the DigitalOcean droplet"
@@ -308,21 +317,25 @@ variable "tags" {
 ## Migration Strategy
 
 ### Phase 1: Create Modules
+
 1. Extract your current DigitalOcean configuration into a module
 2. Test the module in your current workspace
 3. Create the new directory structure
 
 ### Phase 2: Set Up New Workspaces
+
 1. Create development environment workspaces in Scalr
 2. Set up provider configurations in Scalr account scope
 3. Configure environment-level variables
 
 ### Phase 3: Add Proxmox Support
+
 1. Create Proxmox modules (VM and LXC)
 2. Set up Proxmox provider configuration in Scalr
 3. Create workspaces for Proxmox deployments
 
 ### Phase 4: Environment Expansion
+
 1. Clone development structure for staging and production
 2. Adjust variables and configurations for each environment
 3. Set up proper RBAC in Scalr for different environments
@@ -330,9 +343,11 @@ variable "tags" {
 ## Scalr-Specific Best Practices
 
 ### 1. Use VCS-Driven Workspaces
+
 Configure workspaces to automatically trigger plans on pull requests and applies on merges. This provides better collaboration and review processes.
 
 ### 2. Leverage Scalr Provider for Automation
+
 ```hcl
 # Use Scalr provider to manage workspaces
 resource "scalr_workspace" "digitalocean_dev" {
@@ -352,13 +367,16 @@ resource "scalr_workspace" "digitalocean_dev" {
 ```
 
 ### 3. Implement Proper Tagging Strategy
+
 - Environment tags for resource identification
 - Cost allocation tags
 - Ownership tags
 - Scalr workspace identification tags
 
 ### 4. Use Variable Sets
+
 Create variable sets in Scalr for:
+
 - Common provider credentials
 - Shared networking configurations
 - Standard tags and labels
@@ -366,7 +384,9 @@ Create variable sets in Scalr for:
 ## Advanced Features
 
 ### 1. Policy as Code with OPA
+
 Use Scalr's OPA integration to enforce standards across deployments:
+
 ```rego
 package terraform.rules.tagging
 
@@ -385,7 +405,9 @@ has_required_tags(tags) {
 ```
 
 ### 2. Cross-Provider Dependencies
+
 Use Scalr's workspace outputs to share information between providers:
+
 ```hcl
 # In DigitalOcean workspace output
 output "network_info" {

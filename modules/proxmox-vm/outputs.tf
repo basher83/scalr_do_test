@@ -1,19 +1,29 @@
-output "id" {
+output "vm_id" {
   description = "The ID of the VM"
-  value       = proxmox_vm_qemu.vm.id
+  value       = proxmox_virtual_environment_vm.vm.vm_id
 }
 
-output "default_ipv4_address" {
-  description = "The default IPv4 address of the VM"
-  value       = proxmox_vm_qemu.vm.default_ipv4_address
+output "name" {
+  description = "The name of the VM"
+  value       = proxmox_virtual_environment_vm.vm.name
 }
 
-output "ssh_host" {
-  description = "The SSH host address"
-  value       = proxmox_vm_qemu.vm.ssh_host
+output "ipv4_addresses" {
+  description = "The IPv4 addresses published by QEMU agent"
+  value       = proxmox_virtual_environment_vm.vm.ipv4_addresses
 }
 
-output "ssh_port" {
-  description = "The SSH port"
-  value       = proxmox_vm_qemu.vm.ssh_port
+output "ipv6_addresses" {
+  description = "The IPv6 addresses published by QEMU agent"
+  value       = proxmox_virtual_environment_vm.vm.ipv6_addresses
+}
+
+output "mac_addresses" {
+  description = "The MAC addresses of the VM"
+  value       = proxmox_virtual_environment_vm.vm.mac_addresses
+}
+
+output "network_interface_names" {
+  description = "The network interface names published by QEMU agent"
+  value       = proxmox_virtual_environment_vm.vm.network_interface_names
 }
