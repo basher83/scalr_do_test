@@ -1,8 +1,5 @@
 terraform {
   backend "remote" {
-    hostname = "the-mothership.scalr.io"
-    workspaces {
-      name = "dev-proxmox-container"
-    }
+    # Configuration loaded from backend config file or CLI
   }
 }

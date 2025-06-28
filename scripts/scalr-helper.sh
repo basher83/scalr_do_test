@@ -40,12 +40,17 @@ usage() {
     echo "  cancel <run-id>              Cancel a run"
     echo "  logs <run-id>                Show run logs"
     echo "  cost <workspace>             Show cost estimation for workspace"
+    echo "  configure-workspace <name>   Configure workspace variables"
+    echo "  list-vars <workspace>        List workspace variables"
+    echo "  set-var <workspace>          Set a workspace variable"
     echo ""
     echo "Examples:"
     echo "  $0 list-workspaces"
     echo "  $0 workspace development-digitalocean"
     echo "  $0 plan development-digitalocean"
     echo "  $0 apply production-proxmox-vm"
+    echo "  $0 configure-workspace development-digitalocean"
+    echo "  $0 set-var development-digitalocean ssh_fingerprint"
     exit 1
 }
 
@@ -56,7 +61,7 @@ shift || true
 case $COMMAND in
     list-workspaces)
         echo -e "${BLUE}Listing all workspaces...${NC}"
-        scalr workspace list
+        scalr get-workspaces
         ;;
         
     workspace)
@@ -66,7 +71,13 @@ case $COMMAND in
             usage
         fi
         echo -e "${BLUE}Showing workspace: $WORKSPACE${NC}"
-        scalr workspace show -workspace="$WORKSPACE"
+        # Find workspace ID by name
+        WORKSPACE_ID=$(scalr get-workspaces -query="$WORKSPACE" | grep -oE 'ws-[a-zA-Z0-9]+' | head -1)
+        if [ -z "$WORKSPACE_ID" ]; then
+            echo -e "${RED}Workspace not found: $WORKSPACE${NC}"
+            exit 1
+        fi
+        scalr get-workspace -workspace="$WORKSPACE_ID"
         ;;
         
     plan)
@@ -76,9 +87,15 @@ case $COMMAND in
             usage
         fi
         echo -e "${BLUE}Creating plan run for workspace: $WORKSPACE${NC}"
-        RUN_ID=$(scalr run create -workspace="$WORKSPACE" -auto-apply=false | grep -oE 'run-[a-zA-Z0-9]+' | head -1)
+        # Find workspace ID by name
+        WORKSPACE_ID=$(scalr get-workspaces -query="$WORKSPACE" | grep -oE 'ws-[a-zA-Z0-9]+' | head -1)
+        if [ -z "$WORKSPACE_ID" ]; then
+            echo -e "${RED}Workspace not found: $WORKSPACE${NC}"
+            exit 1
+        fi
+        RUN_ID=$(scalr create-run -workspace="$WORKSPACE_ID" -is-confirm-apply=false | grep -oE 'run-[a-zA-Z0-9]+' | head -1)
         echo -e "${GREEN}Created run: $RUN_ID${NC}"
-        echo "View run: scalr run show -id=$RUN_ID"
+        echo "View run: scalr get-run -run=$RUN_ID"
         ;;
         
     apply)
@@ -91,9 +108,15 @@ case $COMMAND in
         echo -e "${YELLOW}This will apply changes automatically. Continue? (y/N)${NC}"
         read -r CONFIRM
         if [ "$CONFIRM" = "y" ] || [ "$CONFIRM" = "Y" ]; then
-            RUN_ID=$(scalr run create -workspace="$WORKSPACE" -auto-apply=true | grep -oE 'run-[a-zA-Z0-9]+' | head -1)
+            # Find workspace ID by name
+            WORKSPACE_ID=$(scalr get-workspaces -query="$WORKSPACE" | grep -oE 'ws-[a-zA-Z0-9]+' | head -1)
+            if [ -z "$WORKSPACE_ID" ]; then
+                echo -e "${RED}Workspace not found: $WORKSPACE${NC}"
+                exit 1
+            fi
+            RUN_ID=$(scalr create-run -workspace="$WORKSPACE_ID" -is-confirm-apply=true | grep -oE 'run-[a-zA-Z0-9]+' | head -1)
             echo -e "${GREEN}Created auto-apply run: $RUN_ID${NC}"
-            echo "Monitor run: scalr run show -id=$RUN_ID"
+            echo "Monitor run: scalr get-run -run=$RUN_ID"
         else
             echo "Cancelled"
         fi
@@ -106,7 +129,13 @@ case $COMMAND in
             usage
         fi
         echo -e "${BLUE}Recent runs for workspace: $WORKSPACE${NC}"
-        scalr run list -workspace="$WORKSPACE" -limit=10
+        # Find workspace ID by name
+        WORKSPACE_ID=$(scalr get-workspaces -query="$WORKSPACE" | grep -oE 'ws-[a-zA-Z0-9]+' | head -1)
+        if [ -z "$WORKSPACE_ID" ]; then
+            echo -e "${RED}Workspace not found: $WORKSPACE${NC}"
+            exit 1
+        fi
+        scalr get-runs -filter-workspace="$WORKSPACE_ID"
         ;;
         
     run-status)
@@ -116,7 +145,7 @@ case $COMMAND in
             usage
         fi
         echo -e "${BLUE}Status for run: $RUN_ID${NC}"
-        scalr run show -id="$RUN_ID" | grep -E "Status:|Created:|Message:"
+        scalr get-run -run="$RUN_ID" | grep -E "Status:|Created:|Message:"
         ;;
         
     cancel)
@@ -126,7 +155,7 @@ case $COMMAND in
             usage
         fi
         echo -e "${YELLOW}Cancelling run: $RUN_ID${NC}"
-        scalr run cancel -id="$RUN_ID"
+        scalr cancel-run -run="$RUN_ID"
         ;;
         
     logs)
@@ -135,8 +164,8 @@ case $COMMAND in
             echo -e "${RED}Error: Run ID required${NC}"
             usage
         fi
-        echo -e "${BLUE}Logs for run: $RUN_ID${NC}"
-        scalr run logs -id="$RUN_ID"
+        echo -e "${BLUE}Plan log for run: $RUN_ID${NC}"
+        scalr get-plan-log -run="$RUN_ID"
         ;;
         
     cost)
@@ -145,8 +174,134 @@ case $COMMAND in
             echo -e "${RED}Error: Workspace name required${NC}"
             usage
         fi
-        echo -e "${BLUE}Cost estimation for workspace: $WORKSPACE${NC}"
-        scalr workspace show -workspace="$WORKSPACE" | grep -E "Monthly Cost:|Hourly Cost:"
+        echo -e "${BLUE}Getting workspace details for: $WORKSPACE${NC}"
+        # Find workspace ID by name
+        WORKSPACE_ID=$(scalr get-workspaces -query="$WORKSPACE" | grep -oE 'ws-[a-zA-Z0-9]+' | head -1)
+        if [ -z "$WORKSPACE_ID" ]; then
+            echo -e "${RED}Workspace not found: $WORKSPACE${NC}"
+            exit 1
+        fi
+        scalr get-workspace -workspace="$WORKSPACE_ID" | grep -E "cost-estimation-enabled:|latest-run:"
+        echo -e "${YELLOW}Note: For detailed cost estimates, check specific runs with cost estimation enabled${NC}"
+        ;;
+        
+    configure-workspace)
+        WORKSPACE=$1
+        if [ -z "$WORKSPACE" ]; then
+            echo -e "${RED}Error: Workspace name required${NC}"
+            usage
+        fi
+        echo -e "${BLUE}Configuring workspace: $WORKSPACE${NC}"
+        # Find workspace ID by name
+        WORKSPACE_ID=$(scalr get-workspaces -query="$WORKSPACE" | grep -oE 'ws-[a-zA-Z0-9]+' | head -1)
+        if [ -z "$WORKSPACE_ID" ]; then
+            echo -e "${RED}Workspace not found: $WORKSPACE${NC}"
+            exit 1
+        fi
+        
+        # Determine if it's a DigitalOcean workspace
+        if [[ "$WORKSPACE" == *"digitalocean"* ]]; then
+            echo -e "${BLUE}Configuring DigitalOcean workspace variables...${NC}"
+            
+            # SSH fingerprint
+            echo -e "${YELLOW}Enter SSH fingerprint (sensitive):${NC}"
+            read -rs SSH_FINGERPRINT
+            if [ -n "$SSH_FINGERPRINT" ]; then
+                scalr create-variable \
+                    -workspace="$WORKSPACE_ID" \
+                    -key="ssh_fingerprint" \
+                    -value="$SSH_FINGERPRINT" \
+                    -category="terraform" \
+                    -hcl=false \
+                    -sensitive=true || echo "Variable may already exist"
+            fi
+            
+            # Development public key
+            echo -e "${YELLOW}Enter development public key (sensitive):${NC}"
+            read -rs DEV_PUBLIC_KEY
+            if [ -n "$DEV_PUBLIC_KEY" ]; then
+                scalr create-variable \
+                    -workspace="$WORKSPACE_ID" \
+                    -key="development_public_key" \
+                    -value="$DEV_PUBLIC_KEY" \
+                    -category="terraform" \
+                    -hcl=false \
+                    -sensitive=true || echo "Variable may already exist"
+            fi
+        fi
+        
+        echo -e "${GREEN}✓ Workspace configuration complete${NC}"
+        ;;
+        
+    list-vars)
+        WORKSPACE=$1
+        if [ -z "$WORKSPACE" ]; then
+            echo -e "${RED}Error: Workspace name required${NC}"
+            usage
+        fi
+        echo -e "${BLUE}Variables for workspace: $WORKSPACE${NC}"
+        # Find workspace ID by name
+        WORKSPACE_ID=$(scalr get-workspaces -query="$WORKSPACE" | grep -oE 'ws-[a-zA-Z0-9]+' | head -1)
+        if [ -z "$WORKSPACE_ID" ]; then
+            echo -e "${RED}Workspace not found: $WORKSPACE${NC}"
+            exit 1
+        fi
+        scalr get-variables -filter-workspace="$WORKSPACE_ID"
+        ;;
+        
+    set-var)
+        WORKSPACE=$1
+        VAR_KEY=$2
+        if [ -z "$WORKSPACE" ] || [ -z "$VAR_KEY" ]; then
+            echo -e "${RED}Error: Workspace name and variable key required${NC}"
+            echo "Usage: $0 set-var <workspace> <variable-key>"
+            exit 1
+        fi
+        
+        # Find workspace ID by name
+        WORKSPACE_ID=$(scalr get-workspaces -query="$WORKSPACE" | grep -oE 'ws-[a-zA-Z0-9]+' | head -1)
+        if [ -z "$WORKSPACE_ID" ]; then
+            echo -e "${RED}Workspace not found: $WORKSPACE${NC}"
+            exit 1
+        fi
+        
+        echo -e "${YELLOW}Is this a sensitive variable? (y/N)${NC}"
+        read -r IS_SENSITIVE
+        
+        if [ "$IS_SENSITIVE" = "y" ] || [ "$IS_SENSITIVE" = "Y" ]; then
+            echo -e "${YELLOW}Enter value for $VAR_KEY (hidden):${NC}"
+            read -rs VAR_VALUE
+            SENSITIVE_FLAG=true
+        else
+            echo -e "${YELLOW}Enter value for $VAR_KEY:${NC}"
+            read -r VAR_VALUE
+            SENSITIVE_FLAG=false
+        fi
+        
+        echo -e "${BLUE}Setting variable $VAR_KEY for workspace $WORKSPACE...${NC}"
+        scalr create-variable \
+            -workspace="$WORKSPACE_ID" \
+            -key="$VAR_KEY" \
+            -value="$VAR_VALUE" \
+            -category="terraform" \
+            -hcl=false \
+            -sensitive=$SENSITIVE_FLAG
+        
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✓ Variable set successfully${NC}"
+        else
+            echo -e "${YELLOW}Variable may already exist. Trying to update...${NC}"
+            # Get variable ID
+            VAR_ID=$(scalr get-variables -filter-workspace="$WORKSPACE_ID" | grep -B2 "\"$VAR_KEY\"" | grep -oE 'var-[a-zA-Z0-9]+' | head -1)
+            if [ -n "$VAR_ID" ]; then
+                scalr update-variable \
+                    -variable="$VAR_ID" \
+                    -value="$VAR_VALUE"
+                echo -e "${GREEN}✓ Variable updated successfully${NC}"
+            else
+                echo -e "${RED}Failed to set or update variable${NC}"
+            fi
+        fi
         ;;
         
     *)
