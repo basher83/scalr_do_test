@@ -52,6 +52,7 @@ export SCALR_TOKEN="your-scalr-api-token"
 Workspaces follow the pattern: `{environment}-{provider}`
 
 Examples:
+
 - `development-digitalocean`
 - `development-proxmox-vm`
 - `development-proxmox-container`
