@@ -65,3 +65,24 @@ Examples:
 2. **Flexibility**: Easy to switch between environments
 3. **Security**: API tokens are not stored in code
 4. **Consistency**: Enforces naming conventions
+
+## Scalr CLI Integration
+
+For easier management of Scalr resources, install and use the Scalr CLI:
+
+```bash
+# Install Scalr CLI
+./scripts/install-scalr-cli.sh
+
+# Use the helper script for common operations
+./scripts/scalr-helper.sh list-workspaces
+./scripts/scalr-helper.sh plan development-digitalocean
+./scripts/scalr-helper.sh runs development-digitalocean
+```
+
+The Scalr CLI provides direct access to:
+- Workspace management
+- Run creation and monitoring
+- Cost estimation
+- Policy information
+- And more Scalr API features
